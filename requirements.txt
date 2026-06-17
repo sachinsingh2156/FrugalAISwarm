@@ -1,0 +1,43 @@
+# Frugal AI Agent Swarms — Phase-1 Pilot
+# Python 3.11+
+
+# Orchestration
+langgraph>=0.2.0
+langgraph-checkpoint-sqlite>=2.0.0  # SQLite checkpointer for LangGraph (pause/resume)
+langchain>=0.3.0
+langchain-community>=0.3.0
+langchain-ollama>=0.2.0
+
+# Embeddings
+sentence-transformers>=3.0.0
+
+# Vector store
+chromadb>=0.5.0
+
+# Experiment tracking
+mlflow>=2.14.0
+
+# HTTP / async
+httpx>=0.27.0
+aiohttp>=3.10.0
+
+# Data
+numpy>=1.26.0
+scipy>=1.13.0
+pandas>=2.2.0
+
+# Utilities
+pydantic>=2.7.0
+rich>=13.7.0
+click>=8.1.0
+python-dotenv>=1.0.0
+tqdm>=4.66.0
+psutil>=5.9.0          # hardware profiling + RAM monitoring (frugality metrics)
+
+# Dashboard server
+flask>=3.0.0
+flask-cors>=4.0.0
+
+# Notebook
+jupyter>=1.0.0
+ipykernel>=6.29.0

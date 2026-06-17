@@ -1,0 +1,35 @@
+# ── Frugal AI Agent Swarm — Dashboard container ───────────────────────────────
+# Ollama runs locally on the host (not in Docker). Install from https://ollama.ai
+#
+# Usage:
+#   ollama serve              # start Ollama locally (or use the macOS app)
+#   make pull-models          # pull LLMs into local Ollama
+#   docker compose up -d      # start dashboard only
+#   docker compose down       # stop dashboard
+#
+# Open the dashboard at: http://localhost:5050
+# Ollama API (host):    http://localhost:11434
+
+services:
+
+  dashboard:
+    build: .
+    container_name: frugal_swarm_dashboard
+    ports:
+      - "5050:5050"
+    volumes:
+      - swarm_data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # host.docker.internal reaches Ollama on the Mac host from inside the container
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_TIMEOUT=${OLLAMA_TIMEOUT:-120}
+      - LOW_WATERMARK_MODE=${LOW_WATERMARK_MODE:-0}
+      - SWARM_ROLE=${SWARM_ROLE:-researcher}
+      - MLFLOW_TRACKING_URI=/app/data/mlflow
+    restart: unless-stopped
+
+volumes:
+  swarm_data:
+    driver: local

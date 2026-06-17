@@ -1,0 +1,20 @@
+Frugality Analysis — H4 Coordination Overhead
+=======================================================
+Generated : 2026-06-17
+Tasks/cell: 7
+
+C1 baseline mean energy : 0.001367 kWh
+
+Config    n   Energy(kWh)    Overhead   Queue(s)   RAM(MB)   TTFUO(s)   Wall(s)
+--------------------------------------------------------------------------------
+C1       12      0.001367       1.00x      27.01    1234.1       5.79      33.2
+A1       12      0.004455       3.26x      90.70    1431.5      16.22     107.3
+A2       12      0.007056       5.16x     145.23     469.6      24.11     169.7
+A3       36      0.005174       3.79x     105.04    1121.1      19.14     124.5
+A4       36      0.011140       8.15x     227.89     444.2      39.45     267.8
+
+Notes:
+  Energy is estimated from wall-clock × TDP (hardware-adaptive).
+  Queue wait accumulates when multiple tasks share one cell (max_tasks>1).
+  TTFUO = Time-To-First-Useful-Output (first task in cell completes).
+  Overhead = mean energy / C1 baseline.

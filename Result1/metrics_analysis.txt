@@ -1,0 +1,35 @@
+Metrics Analysis by Configuration
+==================================================
+Generated: 2026-06-17
+Total runs: 108  (ok=108, error=0)
+
+[C1]  cells=12
+  tasks total / success : 12 / 0
+  tokens  mean=703.9  total=8447
+  wall_s  mean=5.8s  total=69.5s
+
+[A1]  cells=12
+  tasks total / success : 12 / 0
+  tokens  mean=2852.9  total=34235
+  wall_s  mean=15.7s  total=188.2s
+
+[A2]  cells=12
+  tasks total / success : 12 / 0
+  tokens  mean=3297.2  total=39566
+  wall_s  mean=25.3s  total=303.2s
+
+[A3]  cells=36
+  tasks total / success : 36 / 0
+  tokens  mean=2571.0  total=92557
+  wall_s  mean=19.4s  total=697.0s
+  [full] n=12  mean_tokens=2574.8
+  [none] n=12  mean_tokens=2526.8
+  [selective] n=12  mean_tokens=2611.4
+
+[A4]  cells=36
+  tasks total / success : 36 / 0
+  tokens  mean=3337.9  total=120165
+  wall_s  mean=38.9s  total=1399.6s
+  [full] n=12  mean_tokens=3480.8
+  [none] n=12  mean_tokens=3228.9
+  [selective] n=12  mean_tokens=3304.1

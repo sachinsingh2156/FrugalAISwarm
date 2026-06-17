@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Frugal AI Agent Swarm — Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8f8f6;--surface:#fff;--surface2:#f3f3f0;--border:#e0dfd8;
+  --text:#1a1a18;--muted:#6b6b65;--accent:#4f46e5;
+  --teal:#0d9488;--amber:#d97706;--rose:#e11d48;--emerald:#059669;
+  --purple:#7c3aed;
+  --c1:#6b7280;--a1:#4f46e5;--a2:#0d9488;--a3:#d97706;--a4:#e11d48;
+  --agent0:#4f46e5;--agent1:#0d9488;--agent2:#d97706;--agent3:#e11d48;--agent4:#7c3aed;
+  --r:8px;--rL:12px;--shadow:0 1px 3px rgba(0,0,0,.07);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;align-items:center;gap:12px;padding:8px 20px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.logo{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px}
+header h1{font-size:15px;font-weight:600}
+.tab-bar{display:flex;gap:2px;margin-left:16px}
+.tab-btn{padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);font-size:12px;font-weight:500;cursor:pointer;color:var(--muted);transition:all .15s}
+.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.hdr-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#ccc;transition:background .3s}
+.status-dot.ok{background:var(--emerald)}
+.status-dot.error{background:var(--rose)}
+#model-tag{font-size:12px;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:4px;border:1px solid var(--border)}
+.tab-content{display:none;flex:1;overflow:hidden}
+.tab-content.active{display:flex}
+/* Left panel */
+.panel-left{width:260px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.panel-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+.panel-section h3{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:10px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:3px;margin-top:8px}
+label:first-child{margin-top:0}
+select,input[type=text],textarea{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:var(--r);background:var(--surface2);font-size:13px;color:var(--text);font-family:inherit;resize:none;outline:none}
+select:focus,input:focus,textarea:focus{border-color:var(--accent)}
+textarea{min-height:90px;line-height:1.4}
+.run-btn{width:100%;margin-top:12px;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer}
+.run-btn:hover{background:#4338ca}
+.run-btn:disabled{background:#a5b4fc;cursor:not-allowed}
+.stop-btn{width:100%;margin-top:6px;padding:7px;background:transparent;color:var(--rose);border:1px solid var(--rose);border-radius:var(--r);font-size:12px;cursor:pointer;display:none}
+.stop-btn.visible{display:block}
+.task-picker{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto}
+.task-item{padding:6px 8px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;font-size:12px;background:var(--surface2);line-height:1.3}
+.task-item:hover{border-color:var(--accent)}
+.task-item.selected{border-color:var(--accent);background:rgba(79,70,229,.06)}
+/* Main canvas */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.flow-canvas{flex:1;overflow-y:auto;overflow-x:hidden;padding:20px}
+/* Stage cards */
+.stage{background:var(--surface);border:1px solid var(--border);border-radius:var(--rL);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow)}
+.stage-header{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.stage-icon{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.stage-title{font-weight:600;font-size:13px;flex:1}
+.stage-badge{font-size:11px;padding:2px 7px;border-radius:4px;background:var(--surface);border:1px solid var(--border);color:var(--muted)}
+.stage-body{padding:12px 14px}
+.connector{text-align:center;color:var(--muted);font-size:18px;line-height:1;margin:-2px 0;user-select:none}
+.task-card{border:1.5px solid var(--accent);border-radius:var(--rL);padding:12px 14px;background:rgba(79,70,229,.04)}
+.task-family-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px;background:rgba(79,70,229,.1);color:var(--accent);margin-bottom:6px;font-weight:500}
+.task-prompt{font-size:13px;line-height:1.5}
+.task-ref{font-size:11px;color:var(--muted);margin-top:6px}
+.board-row{display:flex;gap:8px;margin-top:6px}
+.board-stat{flex:1;text-align:center;padding:6px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--border)}
+.board-stat .num{font-size:18px;font-weight:600}
+.board-stat .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.agents-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.workers-stack{display:flex;flex-direction:column;gap:10px}
+.worker-row{display:flex;border:1.5px solid var(--border);border-radius:var(--rL);overflow:hidden;background:var(--surface);min-height:72px}
+.worker-row.active{border-color:var(--agent-color);box-shadow:0 0 0 1px var(--agent-color)}
+.worker-row-left{width:250px;flex-shrink:0;padding:10px 12px;border-right:1px solid var(--border);background:var(--surface2);display:flex;flex-direction:column;gap:5px}
+.worker-row-hdr{display:flex;align-items:center;gap:8px}
+.worker-assigned{font-size:11px;color:var(--muted);line-height:1.4}
+.worker-row-body{flex:1;min-width:0;padding:10px 14px;font-size:12px;line-height:1.55;overflow-y:auto;max-height:220px;word-break:break-word}
+.agent-card{border:1.5px solid var(--border);border-radius:var(--rL);overflow:hidden;background:var(--surface)}
+.agent-card.active{border-color:var(--agent-color)}
+.agent-header{padding:8px 10px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--border)}
+.agent-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;flex-shrink:0}
+.agent-name{font-weight:600;font-size:12px}
+.agent-role{font-size:10px;color:var(--muted)}
+.agent-body{padding:8px 10px;font-size:12px}
+.agent-status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);margin-bottom:6px}
+.spinner{width:10px;height:10px;border:1.5px solid #ddd;border-top-color:var(--agent-color);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.agent-response{font-size:12px;line-height:1.5;max-height:120px;overflow-y:auto;word-break:break-word}
+.agent-meta{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.meta-pill{font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--muted)}
+.shapley-bar-wrap{margin-top:8px}
+.shapley-label{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:2px}
+.shapley-bar{height:5px;border-radius:3px;background:#e5e7eb;overflow:hidden}
+.shapley-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.dag-area{margin-top:8px}
+.dag-edge{display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 0;border-bottom:1px dashed var(--border)}
+.dag-edge:last-child{border-bottom:none}
+.dag-node{padding:2px 8px;border-radius:4px;font-weight:600;font-size:11px;color:#fff}
+.dag-arrow{color:var(--muted)}
+.context-box{background:rgba(13,148,136,.05);border:1px solid rgba(13,148,136,.2);border-radius:var(--r);padding:8px 10px;font-size:11px;margin-top:4px;line-height:1.4}
+.context-box strong{color:var(--teal);display:block;margin-bottom:3px;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.verif-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:8px}
+.verif-aspect{border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;text-align:center;background:var(--surface2)}
+.verif-aspect.pass{border-color:var(--emerald);background:rgba(5,150,105,.05)}
+.verif-aspect.fail{border-color:var(--rose);background:rgba(225,29,72,.05)}
+.verif-aspect .aspect-name{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.verif-aspect .aspect-score{font-size:18px;font-weight:600}
+.verif-aspect.pass .aspect-score{color:var(--emerald)}
+.verif-aspect.fail .aspect-score{color:var(--rose)}
+.debate-box{background:rgba(124,58,237,.05);border:1px solid rgba(124,58,237,.2);border-radius:var(--r);padding:8px 10px;margin-top:8px;font-size:12px;line-height:1.4}
+.debate-box strong{color:var(--purple);display:block;font-size:10px;text-transform:uppercase;margin-bottom:4px}
+.final-card{border:2px solid var(--emerald);border-radius:var(--rL);padding:14px 16px;background:rgba(5,150,105,.04)}
+.final-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.final-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px}
+.final-badge.pass{background:rgba(5,150,105,.1);color:var(--emerald)}
+.final-badge.fail{background:rgba(225,29,72,.1);color:var(--rose)}
+.final-text{font-size:13px;line-height:1.6;word-break:break-word}
+.final-ref{margin-top:8px;font-size:11px;color:var(--muted);padding-top:8px;border-top:1px dashed var(--border)}
+/* Right metrics */
+.panel-right{width:200px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;padding:14px 12px}
+.panel-right h3{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:10px}
+.metric-card{background:var(--surface2);border-radius:var(--r);padding:10px;margin-bottom:8px;border:1px solid var(--border)}
+.metric-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.metric-value{font-size:22px;font-weight:600;line-height:1.2;margin-top:2px}
+.metric-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.h-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+.h-row:last-child{border-bottom:none}
+.h-label{color:var(--muted)}
+.h-val{font-weight:600}
+.h-pass{color:var(--emerald)}
+.h-fail{color:var(--rose)}
+.h-pending{color:var(--muted)}
+.log-area{margin-top:12px}
+.log-entry{font-size:10px;color:var(--muted);padding:3px 0;border-bottom:1px solid var(--border);line-height:1.3}
+.log-time{color:var(--accent);font-weight:500;margin-right:4px}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:var(--muted);padding:40px}
+.empty-state .icon{font-size:40px;opacity:.3}
+.empty-state p{font-size:13px;text-align:center;max-width:240px;line-height:1.5}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fadein{animation:fadeIn .25s ease}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.thinking{animation:pulse 1.2s ease infinite}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#d1d0c8;border-radius:3px}
+.md p{margin:0 0 6px}.md p:last-child{margin-bottom:0}
+.md h1,.md h2,.md h3,.md h4{font-weight:600;margin:8px 0 4px}
+.md ul,.md ol{padding-left:18px;margin:4px 0 6px}
+.md li{margin-bottom:2px}
+.md code{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:1px 4px;font-family:ui-monospace,monospace;font-size:.9em}
+.md pre{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;overflow-x:auto;margin:6px 0}
+.md table{border-collapse:collapse;width:100%;font-size:.9em;margin:6px 0}
+.md th,.md td{border:1px solid var(--border);padding:4px 8px;text-align:left}
+.md th{background:var(--surface2);font-weight:600}
+.md strong{font-weight:600}
+.md .katex{font-size:1.05em}
+.worker-row-body .katex,.agent-out-body .katex,.final-text .katex{font-size:1.05em}
+/* ── Results tab ── */
+#results-tab{flex-direction:column;background:var(--bg)}
+.filter-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0}
+.filter-bar label{font-size:11px;color:var(--muted);margin:0;white-space:nowrap}
+.filter-bar select{width:auto;padding:4px 8px;font-size:12px}
+.results-layout{display:flex;flex:1;overflow:hidden}
+.results-main{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+.results-side{width:360px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:var(--rL);padding:12px 14px;box-shadow:var(--shadow)}
+.sc-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.sc-value{font-size:22px;font-weight:700;line-height:1}
+.sc-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.chart-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--rL);padding:14px;box-shadow:var(--shadow)}
+.chart-title{font-size:12px;font-weight:600;margin-bottom:12px}
+.chart-subtitle{font-size:11px;color:var(--muted);font-weight:400}
+.chart-body{display:flex;flex-direction:column;gap:7px}
+.chart-row{display:flex;align-items:center;gap:8px}
+.chart-label{font-size:11px;font-weight:600;width:34px;flex-shrink:0}
+.chart-bars{flex:1;display:flex;flex-direction:column;gap:3px}
+.bar-line{display:flex;align-items:center;gap:6px}
+.bar-tag{font-size:9px;font-weight:600;width:20px;flex-shrink:0}
+.bar-track{flex:1;height:16px;background:#e5e7eb;border-radius:4px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:4px;min-width:2px}
+.bar-value{font-size:10px;font-weight:600;width:44px;text-align:right;flex-shrink:0}
+.thr-ok{color:var(--emerald)}
+.thr-warn{color:var(--amber)}
+.thr-bad{color:var(--rose)}
+.bar-track-wrap{flex:1;position:relative}
+.threshold-line{position:absolute;top:0;bottom:0;width:2px;background:rgba(225,29,72,.5);pointer-events:none;z-index:1}
+.table-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--rL);overflow:hidden;box-shadow:var(--shadow)}
+.table-section-hdr{font-size:12px;font-weight:600;padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.cell-count{font-size:11px;color:var(--muted);font-weight:400}
+.tbl-wrap{overflow-x:auto;max-height:320px;overflow-y:auto}
+.rtbl{width:100%;border-collapse:collapse;font-size:12px}
+.rtbl th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:left;padding:7px 10px;background:var(--surface2);border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;cursor:pointer;user-select:none}
+.rtbl th:hover{color:var(--accent)}
+.rtbl td{padding:7px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.rtbl tr:last-child td{border-bottom:none}
+.rtbl tr:hover td{background:rgba(79,70,229,.03);cursor:pointer}
+.rtbl tr.sel td{background:rgba(79,70,229,.07)}
+.cfg-chip{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;color:#fff}
+.run-chip{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600}
+.run-r1{background:rgba(79,70,229,.1);color:var(--accent)}
+.run-r2{background:rgba(5,150,105,.1);color:var(--emerald)}
+.oh-ok{color:var(--emerald);font-weight:600}
+.oh-warn{color:var(--amber);font-weight:600}
+.oh-bad{color:var(--rose);font-weight:600}
+/* Side preview */
+.side-hdr{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.side-hdr h3{font-size:12px;font-weight:600}
+.side-hdr p{font-size:11px;color:var(--muted);margin-top:2px}
+.side-body{flex:1;overflow-y:auto;padding:14px}
+.side-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;gap:8px;color:var(--muted);text-align:center;font-size:12px;padding:16px}
+.preview-item{border:1px solid var(--border);border-radius:var(--rL);margin-bottom:10px;overflow:hidden;background:var(--surface)}
+.preview-hdr{padding:7px 10px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;font-size:11px}
+.preview-num{font-weight:600;color:var(--accent)}
+.preview-id{color:var(--muted);font-size:10px}
+.preview-body{padding:10px}
+.preview-prompt{font-size:12px;line-height:1.5;margin-bottom:6px}
+.preview-ref{font-size:11px;color:var(--muted);padding:6px 8px;background:var(--surface2);border-radius:var(--r);line-height:1.4}
+.preview-ref-lbl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:2px}
+.load-btn{width:100%;margin-top:8px;padding:6px;background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:var(--r);font-size:11px;cursor:pointer;font-weight:500}
+.load-btn:hover{background:var(--accent);color:#fff}
+.no-data{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+/* ── Inline output runner ── */
+.io-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:8px 0 4px}
+.io-label.inp{color:var(--accent)}
+.io-label.out{color:var(--emerald)}
+.out-section{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+.out-box{min-height:30px}
+.run-out-btn{display:block;width:100%;padding:7px 10px;background:transparent;color:var(--emerald);border:1px solid var(--emerald);border-radius:var(--r);font-size:11px;cursor:pointer;font-weight:600;text-align:left;transition:all .15s}
+.run-out-btn:hover{background:var(--emerald);color:#fff}
+.run-out-btn:disabled{opacity:.5;cursor:not-allowed}
+.run-out-btn.rerun{color:var(--muted);border-color:var(--border);font-weight:400;margin-top:6px;font-size:10px}
+.run-out-btn.rerun:hover{background:var(--surface2);color:var(--text)}
+.out-spinner{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px;padding:6px 0}
+.spinner2{display:inline-block;width:11px;height:11px;border:1.5px solid #ddd;border-top-color:var(--emerald);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+.out-response{font-size:12px;line-height:1.6;max-height:320px;overflow-y:auto;padding:6px 0;word-break:break-word;border-radius:var(--r)}
+.out-meta{font-size:10px;color:var(--muted);margin-top:4px;padding-top:4px;border-top:1px dashed var(--border);display:flex;gap:8px;align-items:center}
+.out-badge{padding:2px 6px;border-radius:4px;font-weight:600;font-size:10px}
+.out-badge.verified{background:rgba(5,150,105,.1);color:var(--emerald)}
+.out-badge.unverified{background:rgba(107,114,128,.1);color:var(--muted)}
+.out-error{font-size:11px;color:var(--rose);padding:4px 0}
+.open-live-link{font-size:10px;color:var(--muted);text-decoration:underline;cursor:pointer;display:block;text-align:right;margin-top:4px}
+.agent-out-section{border:1.5px solid var(--border);border-radius:var(--rL);overflow:hidden;margin-bottom:8px;background:var(--surface)}
+.agent-out-hdr{padding:7px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;border-bottom:1px solid var(--border)}
+.agent-out-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;color:#fff;flex-shrink:0}
+.agent-out-id{font-weight:600}
+.agent-out-subtask{font-size:10px;color:var(--muted);flex:1;min-width:0;line-height:1.3}
+.agent-out-meta{margin-left:auto;font-size:10px;color:var(--muted);white-space:nowrap}
+.agent-out-body{padding:10px 12px;font-size:12px;line-height:1.55;max-height:280px;overflow-y:auto;word-break:break-word}
+.agent-out-stack{display:flex;flex-direction:column;gap:0}
+.agent-out-final{margin-top:10px;padding-top:10px;border-top:2px solid var(--emerald)}
+.agent-out-final .agent-out-hdr{background:rgba(5,150,105,.06)}
+.open-live-link:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">🐝</div>
+  <h1>Frugal AI Agent Swarm <span style="font-weight:400;color:var(--muted)">— COL Phase-1</span></h1>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-live" onclick="switchTab('live')">▶ Live Run</button>
+    <button class="tab-btn" id="tab-results" onclick="switchTab('results')">📊 Results (R1 + R2)</button>
+  </div>
+  <div class="hdr-right">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="model-tag">checking…</span>
+  </div>
+</header>
+
+<!-- LIVE RUN TAB -->
+<div class="tab-content active" id="live-tab">
+  <div class="panel-left">
+    <div class="panel-section">
+      <h3>Task</h3>
+      <label>Corpus family</label>
+      <select id="family-sel">
+        <optgroup label="Education (COL experiment)">
+          <option value="formative_assessment_drafting">Formative assessment drafting</option>
+          <option value="curriculum_question_generation">Curriculum question generation</option>
+          <option value="lesson_adaptation">Lesson adaptation</option>
+          <option value="knowledge_base_retrieval">Knowledge base retrieval</option>
+        </optgroup>
+        <optgroup label="General">
+          <option value="multistep_qa">Multi-step QA</option>
+          <option value="document_analysis">Document analysis</option>
+          <option value="workflow_planning">Workflow planning</option>
+        </optgroup>
+      </select>
+      <label style="margin-top:10px">Pick from corpus</label>
+      <div class="task-picker" id="task-picker"></div>
+      <label style="margin-top:10px">Or type a custom task</label>
+      <textarea id="task-input" placeholder="Enter task here…" rows="3"></textarea>
+      <label>Reference answer (optional)</label>
+      <input type="text" id="ref-input" placeholder="Expected answer…"/>
+    </div>
+    <div class="panel-section">
+      <h3>Architecture</h3>
+      <label>Configuration</label>
+      <select id="config-sel">
+        <option value="C1">C1 — Single-agent baseline</option>
+        <option value="A1">A1 — Fixed-role, single model</option>
+        <option value="A2">A2 — Fixed-role, multi-model</option>
+        <option value="A3" selected>A3 — Self-organising, single model</option>
+        <option value="A4">A4 — Self-organising, multi-model</option>
+      </select>
+      <label id="mode-label">Verification mode</label>
+      <select id="mode-sel">
+        <option value="none">None (baseline)</option>
+        <option value="selective">Selective (uncertainty-gated)</option>
+        <option value="full">Full</option>
+      </select>
+      <label id="size-label">Swarm size</label>
+      <select id="size-sel">
+        <option value="3">3 agents</option>
+        <option value="5">5 agents</option>
+        <option value="2">2 agents</option>
+      </select>
+    </div>
+    <div class="panel-section">
+      <button class="run-btn" id="run-btn" onclick="startRun()">▶ Run</button>
+      <button class="stop-btn" id="stop-btn" onclick="stopRun()">■ Stop</button>
+    </div>
+    <div class="panel-section" style="flex:1">
+      <h3>How it works</h3>
+      <p id="config-desc" style="font-size:11px;color:var(--muted);line-height:1.5"></p>
+    </div>
+  </div>
+  <div class="main">
+    <div class="flow-canvas" id="flow-canvas">
+      <div class="empty-state" id="empty-state">
+        <div class="icon">🐝</div>
+        <p>Pick a task, choose C1–A4, and click <strong>Run</strong> to see the workflow live.<br><br>Switch to <strong>Results</strong> to browse the R1 and R2 experiment data.</p>
+      </div>
+    </div>
+  </div>
+  <div class="panel-right">
+    <h3>Live Metrics</h3>
+    <div class="metric-card"><div class="metric-label">Total tokens</div><div class="metric-value" id="m-tokens">—</div></div>
+    <div class="metric-card"><div class="metric-label">Rounds</div><div class="metric-value" id="m-rounds">—</div></div>
+    <div class="log-area">
+      <h3 style="margin-top:14px;margin-bottom:6px">Event log</h3>
+      <div id="event-log"></div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS TAB -->
+<div class="tab-content" id="results-tab">
+  <div class="filter-bar">
+    <label>Run</label>
+    <select id="f-run" onchange="applyFilters()">
+      <option value="all">All (R1 + R2)</option>
+      <option value="R1">R1 — Smoke (1 task/cell)</option>
+      <option value="R2">R2 — Full (7 tasks/cell)</option>
+    </select>
+    <label>Config</label>
+    <select id="f-config" onchange="applyFilters()">
+      <option value="all">All configs</option>
+      <option value="C1">C1</option>
+      <option value="A1">A1</option>
+      <option value="A2">A2</option>
+      <option value="A3">A3</option>
+      <option value="A4">A4</option>
+    </select>
+    <label>Family</label>
+    <select id="f-family" onchange="applyFilters()">
+      <option value="all">All families</option>
+      <option value="formative_assessment_drafting">Formative assessment</option>
+      <option value="curriculum_question_generation">Curriculum questions</option>
+      <option value="lesson_adaptation">Lesson adaptation</option>
+      <option value="knowledge_base_retrieval">Knowledge base retrieval</option>
+    </select>
+    <label>Mode</label>
+    <select id="f-mode" onchange="applyFilters()">
+      <option value="all">All modes</option>
+      <option value="none">none</option>
+      <option value="selective">selective</option>
+      <option value="full">full</option>
+    </select>
+    <span style="margin-left:auto;font-size:11px;color:var(--muted)" id="r-status">Loading…</span>
+  </div>
+  <div class="results-layout">
+    <div class="results-main" id="results-main">
+      <div class="no-data" id="results-loading">Loading results data…</div>
+    </div>
+    <div class="results-side">
+      <div class="side-hdr">
+        <h3>Task Inputs — Verify What Was Run</h3>
+        <p id="preview-cell-label">Click a row to see the exact prompts used as input for that cell.</p>
+      </div>
+      <div class="side-body" id="task-preview-body">
+        <div class="side-empty">
+          <div style="font-size:30px;opacity:.3">📋</div>
+          <div>Click any row in the cell table to see the task prompts that were input for that cell.</div>
+          <div style="margin-top:6px;font-size:11px">Use "Run this task live" to load any task into the Live Run tab and see the current output.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Constants ────────────────────────────────────────────────────────────────
+const AGENT_COLORS = ['#4f46e5','#0d9488','#d97706','#e11d48','#7c3aed'];
+const CFG_COLORS   = {C1:'#6b7280',A1:'#4f46e5',A2:'#0d9488',A3:'#d97706',A4:'#e11d48'};
+const CFG_DESCS    = {
+  C1: 'Single-agent baseline: one <strong>qwen2.5:3b</strong> agent answers the full task directly. No coordination overhead — the latency floor for H3 and H4.',
+  A1: '<strong>Planner → Executor → Verifier</strong> (all roles: qwen2.5:3b).<br>Planner decomposes the task into 3 subtasks → Executor completes every subtask → Verifier synthesises a polished final answer.',
+  A2: '<strong>Planner → Executor → Verifier</strong> (multi-model).<br>Planner=<strong>qwen2.5:3b</strong> · Executor=<strong>gemma2:2b</strong> · Verifier=<strong>phi3:mini</strong>. Each role runs a different model.',
+  A3: '<strong>Decompose → Execute → Aggregate</strong> (all agents: qwen2.5:3b).<br>Decomposer splits task into N subtasks → each agent owns and executes one → Aggregator (Shapley-scored) synthesises the final answer.',
+  A4: '<strong>Decompose → Execute → Aggregate</strong> (multi-model).<br>agent_0=<strong>qwen2.5:3b</strong> · agent_1=<strong>gemma2:2b</strong> · agent_2=<strong>phi3:mini</strong>. Best-scoring agent\'s model is used for aggregation.',
+};
+const H4_THR = 3.0;
+const CHART_MAX = 10.0;
+
+let agentData = {}, runConfig = {}, started = false;
+let subtaskAssignments = {};  // agent_id → {num, text}
+let allCells = [], filteredCells = [];
+let sortCol = 'idx', sortAsc = true;
+let previewTasks = [];   // tasks shown in the right panel
+let previewCell  = null; // cell metadata for the selected row
+let activeInlineRuns = new Set();
+const inlineRunState = {};  // taskIdx → {sections, final, totalTokens, verified, bestAgent}
+
+function inlineSectionKey(ev){
+  const role = ev.role || (ev.subtask_num !== undefined ? 'Worker' : 'Agent');
+  return `${ev.agent_id||role}-${ev.subtask_num||role}`;
+}
+
+function collectInlineEvent(state, ev){
+  if(!state)return;
+  if(ev.type==='task_decomposed'){
+    const isFixed = ev.role==='Planner';
+    state.sections.push({
+      key: `plan-${ev.agent_id||'decomposer'}`,
+      role: isFixed?'Planner':'Decomposer',
+      agentId: ev.agent_id||'',
+      subtask: `${(ev.subtasks||[]).length} subtasks`,
+      response: ev.plan_text || (ev.subtasks||[]).map((s,i)=>`${i+1}. ${s}`).join('\n'),
+      tokens: ev.tokens,
+      latency: ev.latency_s,
+      color: isFixed?'#4f46e5':'#d97706',
+    });
+  } else if(ev.type==='agent_response'){
+    if(ev.role==='Planner'||ev.role==='Decomposer')return;
+    const subtasks = ev.subtasks || [];
+    const subResponses = ev.subtask_responses || [];
+    if(ev.role==='Executor' && subResponses.some(r=>r)){
+      subResponses.forEach((r,i)=>{
+        if(!r)return;
+        state.sections.push({
+          key: `exec-${i}`,
+          role: 'Executor',
+          agentId: ev.agent_id||'',
+          subtask: `Subtask ${i+1}${subtasks[i]?' — '+subtasks[i]:''}`,
+          response: r,
+          tokens: ev.tokens,
+          latency: ev.latency_s,
+          color: AGENT_COLORS[i%AGENT_COLORS.length],
+        });
+      });
+    } else {
+      state.sections.push({
+        key: inlineSectionKey(ev),
+        role: ev.role || (ev.subtask_num!==undefined?'Worker':'Agent'),
+        agentId: ev.agent_id||'',
+        subtask: ev.subtask_text || (ev.subtask_num?`Subtask ${ev.subtask_num}`:''),
+        response: ev.response||'',
+        tokens: ev.tokens,
+        latency: ev.latency_s,
+        color: ev.subtask_num!==undefined?AGENT_COLORS[(ev.subtask_num-1)%AGENT_COLORS.length]:undefined,
+      });
+    }
+  } else if(ev.type==='aggregation_complete'){
+    if(ev.response){
+      state.sections = state.sections.filter(s=>s.role!=='Aggregator');
+      state.sections.push({
+        key: 'aggregator',
+        role: 'Aggregator',
+        agentId: 'aggregator',
+        response: ev.response,
+        tokens: ev.tokens,
+        latency: ev.latency_s,
+        color: '#059669',
+        score: ev.best_agent?`best: ${ev.best_agent}`:'',
+      });
+    }
+  } else if(ev.type==='final_output'){
+    state.final = ev.response||'';
+    state.totalTokens = ev.total_tokens||state.totalTokens;
+    state.verified = ev.verified;
+    state.bestAgent = ev.best_agent||'';
+  }
+}
+
+function renderInlineSections(state){
+  if(!state)return '';
+  const seen = new Set();
+  const unique = state.sections.filter(s=>{
+    if(seen.has(s.key))return false;
+    seen.add(s.key);
+    return !!s.response;
+  });
+  const agentHtml = unique.map(s=>renderAgentSection(s)).join('');
+  const finalHtml = state.final && !unique.some(s=>['Aggregator','Verifier','Single Agent','Agent'].includes(s.role)) ?
+    `<div class="agent-out-final">${renderAgentSection({
+      role:'Final Output',
+      agentId: state.bestAgent||'',
+      response: state.final,
+      color:'#059669',
+      score: state.verified?'✓ Verified':'○ Unverified',
+    })}</div>` : '';
+  return `<div class="agent-out-stack">${agentHtml}${finalHtml}</div>`;
+}
+
+// ─── Tab switch ───────────────────────────────────────────────────────────────
+function switchTab(t) {
+  ['live','results'].forEach(n => {
+    document.getElementById(n+'-tab').classList.toggle('active', n===t);
+    document.getElementById('tab-'+n).classList.toggle('active', n===t);
+  });
+  if (t==='results' && allCells.length===0) loadResults();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.onload = async () => {
+  updateDesc();
+  loadCorpus();
+  try {
+    const s = await fetch('/api/status').then(r=>r.json());
+    document.getElementById('status-dot').className='status-dot '+(s.ollama_available?'ok':'error');
+    document.getElementById('model-tag').textContent=s.model||'no model';
+  } catch(e) {
+    document.getElementById('status-dot').className='status-dot error';
+    document.getElementById('model-tag').textContent='server offline';
+  }
+};
+
+document.getElementById('family-sel').addEventListener('change', loadCorpus);
+document.getElementById('config-sel').addEventListener('change', () => {
+  const c = document.getElementById('config-sel').value;
+  const fixed = c==='C1'||c==='A1'||c==='A2';
+  document.getElementById('mode-label').style.display = fixed?'none':'';
+  document.getElementById('mode-sel').style.display   = fixed?'none':'';
+  if (c==='C1') {
+    document.getElementById('size-label').style.display='none';
+    document.getElementById('size-sel').style.display='none';
+  } else if (fixed) {
+    document.getElementById('size-label').style.display='';
+    document.getElementById('size-sel').style.display='';
+    document.getElementById('size-sel').innerHTML='<option value="3">3 roles (fixed)</option>';
+  } else {
+    document.getElementById('size-label').style.display='';
+    document.getElementById('size-sel').style.display='';
+    document.getElementById('size-sel').innerHTML='<option value="3">3 agents</option><option value="5">5 agents</option><option value="2">2 agents</option>';
+  }
+  updateDesc();
+});
+
+function updateDesc() {
+  const c = document.getElementById('config-sel').value;
+  document.getElementById('config-desc').innerHTML = CFG_DESCS[c]||'';
+}
+
+async function loadCorpus() {
+  const f = document.getElementById('family-sel').value;
+  try {
+    const tasks = await fetch('/api/corpus?family='+f).then(r=>r.json());
+    const p = document.getElementById('task-picker');
+    p.innerHTML='';
+    tasks.slice(0,8).forEach(t => {
+      const el=document.createElement('div');
+      el.className='task-item';
+      el.textContent=t.prompt.length>80?t.prompt.slice(0,80)+'…':t.prompt;
+      el.onclick=()=>{
+        document.querySelectorAll('.task-item').forEach(x=>x.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById('task-input').value=t.prompt;
+        document.getElementById('ref-input').value=t.reference||'';
+      };
+      p.appendChild(el);
+    });
+  } catch(e){}
+}
+
+// ─── Live Run ─────────────────────────────────────────────────────────────────
+function startRun() {
+  const prompt = document.getElementById('task-input').value.trim();
+  if (!prompt){alert('Enter a task first.');return;}
+  agentData={};
+  runConfig={
+    config:    document.getElementById('config-sel').value,
+    mode:      document.getElementById('mode-sel').value,
+    swarm_size:parseInt(document.getElementById('size-sel').value||3),
+    family:    document.getElementById('family-sel').value,
+  };
+  resetUI();
+  document.getElementById('run-btn').disabled=true;
+  document.getElementById('stop-btn').classList.add('visible');
+  started=true;
+  const body={
+    prompt,
+    reference: document.getElementById('ref-input').value.trim(),
+    family:    runConfig.family,
+    config:    runConfig.config,
+    mode:      runConfig.mode,
+    swarm_size:runConfig.swarm_size,
+  };
+  fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+  .then(res=>{
+    const reader=res.body.getReader(), dec=new TextDecoder();
+    let buf='';
+    function pump(){
+      reader.read().then(({done,value})=>{
+        if(done){onComplete();return;}
+        buf+=dec.decode(value,{stream:true});
+        const lines=buf.split('\n'); buf=lines.pop();
+        lines.forEach(l=>{
+          if(l.startsWith('data: ')){try{handleEvent(JSON.parse(l.slice(6)));}catch(e){}}
+          else if(l==='event: done') onComplete();
+        });
+        pump();
+      });
+    }
+    pump();
+  }).catch(e=>{addLog('error','Connection failed: '+e.message);onComplete();});
+}
+
+function stopRun(){onComplete();addLog('info','Stopped by user');}
+function onComplete(){document.getElementById('run-btn').disabled=false;document.getElementById('stop-btn').classList.remove('visible');started=false;}
+
+function handleEvent(ev) {
+  const t=ev.type;
+  addLog(t, ev.detail||t);
+  if      (t==='task_started')           onTaskStarted(ev);
+  else if (t==='board_update')           onBoardUpdate(ev);
+  else if (t==='round_started')          onRoundStarted(ev);
+  else if (t==='task_decomposed')        onTaskDecomposed(ev);
+  else if (t==='subtask_assigned')       onSubtaskAssigned(ev);
+  else if (t==='agent_thinking')         onAgentThinking(ev);
+  else if (t==='agent_response')         onAgentResponse(ev);
+  else if (t==='shapley_update')         onShapley(ev);
+  else if (t==='dag_update')             onDagUpdate(ev);
+  else if (t==='aggregation_complete')   onAggregationComplete(ev);
+  else if (t==='pipeline_summary')       onPipelineSummary(ev);
+  else if (t==='verification_result')    onVerifResult(ev);
+  else if (t==='final_output')           onFinal(ev);
+  else if (t==='run_complete')           onRunSummary(ev);
+  else if (t==='error')                  addLog('error', ev.message||'error');
+}
+
+function clearAllSpinners(){
+  document.querySelectorAll('.agent-status').forEach(st=>{
+    if(st.querySelector('.spinner')||st.querySelector('.thinking')){
+      st.innerHTML='<span style="color:var(--emerald)">✓</span> complete';
+    }
+  });
+}
+
+function ensureC1Stage(agentId){
+  const sid='single-agent';
+  let stage=document.getElementById('stage-'+sid);
+  if(!stage){
+    stage=makeStage(sid,'🤖',`Single Agent (${agentId})`,'C1','#6b7280');
+    canvas().appendChild(conn());canvas().appendChild(stage);
+    document.getElementById('body-'+sid).innerHTML=
+      `<div class="agent-status" id="status-single-agent"></div>
+       <div id="c1-response"></div>`;
+  }
+  return stage;
+}
+
+function onBoardUpdate(ev){
+  let stage=document.getElementById('stage-board');
+  if(!stage){
+    stage=makeStage('board','📋','Shared task board','','');
+    canvas().appendChild(conn());canvas().appendChild(stage);
+  }
+  document.getElementById('body-board').innerHTML=
+    `<div style="font-size:12px;color:var(--muted);margin-bottom:6px">${esc(ev.detail||'')}</div>
+     <div class="board-row">
+       <div class="board-stat"><div class="num">${ev.open??0}</div><div class="lbl">Open</div></div>
+       <div class="board-stat"><div class="num" style="color:var(--amber)">${ev.claimed??0}</div><div class="lbl">Claimed</div></div>
+       <div class="board-stat"><div class="num" style="color:var(--emerald)">${ev.done??0}</div><div class="lbl">Done</div></div>
+     </div>`;
+}
+
+function onRoundStarted(ev){
+  document.getElementById('m-rounds').textContent=ev.round||'—';
+}
+
+function onLegacyAgentThinking(ev){
+  if(runConfig.config!=='C1'){
+    const stray=document.getElementById('stage-single-agent');
+    if(stray)stray.remove();
+  }
+  const round=ev.round||1;
+  const agentId=ev.agent_id||'';
+  const color=aColor(agentId);
+  initAgent(agentId,'');
+  renderAgentCard(agentId,round);
+  const card=document.getElementById('acard-'+agentId+'-r'+round);
+  if(!card)return;
+  card.classList.add('active');
+  card.querySelector('.agent-status').innerHTML=
+    `<span class="spinner" style="border-top-color:${color}"></span> ${esc(ev.detail||'working…')}`;
+  card.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function onLegacyAgentResponse(ev){
+  const agentId=ev.agent_id||'';
+  const round=ev.round||1;
+  const tokens=ev.tokens||0;
+  const latency=ev.latency_s||0;
+  const response=ev.response||'';
+  renderAgentCard(agentId,round);
+  const card=document.getElementById('acard-'+agentId+'-r'+round);
+  if(!card)return;
+  card.classList.remove('active');
+  card.querySelector('.agent-status').innerHTML=
+    `<span style="color:var(--emerald)">✓</span> done · 🪙 ${tokens} tok · ⏱ ${latency}s`;
+  const textEl=document.getElementById('atext-'+agentId+'-r'+round);
+  if(textEl)textEl.innerHTML=renderAgentSection({
+    role:'Agent',agentId,response,tokens,latency,color:aColor(agentId),
+  });
+  patchRichContent(card);
+  document.getElementById('m-tokens').textContent=sumTok();
+}
+
+function onDagUpdate(ev){
+  const round=ev.round||1;
+  const sid='dag-r'+round;
+  let stage=document.getElementById('stage-'+sid);
+  if(!stage){
+    stage=makeStage(sid,'🔀',`Communication DAG — round ${round}`,'','');
+    canvas().appendChild(conn());canvas().appendChild(stage);
+  }
+  const edges=ev.edges||[];
+  const body=document.getElementById('body-'+sid);
+  if(!edges.length){
+    body.innerHTML='<div style="font-size:12px;color:var(--muted)">No DAG edges this round.</div>';
+    return;
+  }
+  body.innerHTML=`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">${esc(ev.detail||'Information flow between agents')}</div>
+    <div class="dag-area">`+
+    edges.map(([src,tgt])=>`
+      <div class="dag-edge">
+        <div class="dag-node" style="background:${aColor(src)}">${src}</div>
+        <span class="dag-arrow">→</span>
+        <div class="dag-node" style="background:${aColor(tgt)}">${tgt}</div>
+      </div>`).join('')+'</div>';
+}
+
+function resetUI(){
+  document.getElementById('flow-canvas').innerHTML='';
+  subtaskAssignments={};
+  agentData={};
+  ['m-tokens','m-rounds'].forEach(id=>document.getElementById(id).textContent='—');
+  document.getElementById('event-log').innerHTML='';
+}
+
+function canvas(){return document.getElementById('flow-canvas');}
+
+function makeStage(id,icon,title,badge,color){
+  const el=document.createElement('div');
+  el.className='stage fadein';el.id='stage-'+id;
+  el.innerHTML=`<div class="stage-header">
+    <div class="stage-icon" style="background:${color||'var(--surface)'};${color?'color:#fff':''}">${icon}</div>
+    <span class="stage-title">${title}</span>
+    ${badge?`<span class="stage-badge">${badge}</span>`:''}
+  </div><div class="stage-body" id="body-${id}"></div>`;
+  return el;
+}
+
+function conn(){const c=document.createElement('div');c.className='connector';c.textContent='↓';return c;}
+
+function aColor(id){
+  if(typeof id==='string'&&id.includes('agent_'))
+    return AGENT_COLORS[parseInt(id.split('_')[1])%AGENT_COLORS.length];
+  return AGENT_COLORS[0];
+}
+
+function initAgent(id,role){
+  agentData[id]=agentData[id]||{color:aColor(id),role,responses:{},shapley:{}};
+  if(role) agentData[id].role=role;
+}
+
+function ensureRoundStage(round){
+  const sid='agents-r'+round;
+  if(!document.getElementById('stage-'+sid)){
+    const title=(runConfig.config==='A1'||runConfig.config==='A2')
+      ? (['Planner','Executor','Verifier'][round-1]||'Step')+' — role output'
+      : 'Round '+round+' — agent responses';
+    const stage=makeStage(sid,'🤖',title,'','');
+    const grid=document.createElement('div');
+    grid.className='agents-grid';grid.id='agents-grid-r'+round;
+    stage.querySelector('.stage-body').appendChild(grid);
+    canvas().appendChild(conn());canvas().appendChild(stage);
+  }
+  return document.getElementById('agents-grid-r'+round);
+}
+
+function renderAgentCard(agentId,round){
+  const color=agentData[agentId]?.color||aColor(agentId);
+  const role=agentData[agentId]?.role||'';
+  const init=role?role.slice(0,2).toUpperCase():agentId.replace('agent_','A');
+  const grid=ensureRoundStage(round);
+  const cardId='acard-'+agentId+'-r'+round;
+  let card=document.getElementById(cardId);
+  if(!card){
+    card=document.createElement('div');
+    card.className='agent-card';card.id=cardId;
+    card.style.setProperty('--agent-color',color);
+    card.innerHTML=`<div class="agent-header">
+      <div class="agent-avatar" style="background:${color}">${init}</div>
+      <div><div class="agent-name">${agentId}</div><div class="agent-role">${role}</div></div>
+    </div>
+    <div class="agent-body">
+      <div class="agent-status"><span class="thinking" style="color:${color}">●</span> waiting</div>
+      <div class="agent-response" id="atext-${agentId}-r${round}"></div>
+      <div class="agent-meta" id="ameta-${agentId}-r${round}"></div>
+      <div class="shapley-bar-wrap" id="ashapley-${agentId}-r${round}" style="display:none">
+        <div class="shapley-label"><span>Shapley</span><span id="spct-${agentId}-r${round}">—</span></div>
+        <div class="shapley-bar"><div class="shapley-fill" id="sfill-${agentId}-r${round}" style="width:0;background:${color}"></div></div>
+      </div>
+    </div>`;
+    grid.appendChild(card);
+  }
+  return card;
+}
+
+function onTaskStarted(ev){
+  canvas().innerHTML='';
+  if(ev.config)runConfig.config=ev.config;
+  if(ev.mode)runConfig.mode=ev.mode;
+  if(ev.swarm_size)runConfig.swarm_size=ev.swarm_size;
+  const stage=makeStage('task','📋','Task input',ev.family.replace(/_/g,' '),'#4f46e5');
+  stage.querySelector('.stage-body').innerHTML=`<div class="task-card">
+    <div class="task-family-badge">${ev.family.replace(/_/g,' ')}</div>
+    <div class="task-prompt">${esc(ev.prompt)}</div>
+    ${ev.config?`<div class="task-ref">Config: <strong>${ev.config}</strong> | Mode: <strong>${ev.mode}</strong> | Agents: <strong>${ev.swarm_size}</strong></div>`:''}
+  </div>`;
+  canvas().appendChild(stage);
+  ev.agent_ids.forEach(id=>initAgent(id,''));
+}
+
+// ── New collaborative-architecture event handlers ─────────────────────────────
+
+// task_decomposed: A1/A2 Planner reuses pipe-planner stage; A3/A4 Decomposer reuses plan-swarm stage
+function onTaskDecomposed(ev) {
+  // Reuse the stage already created by onAgentThinking; fall back to creating it
+  const isFixed = ev.role === 'Planner';
+  const stageId = isFixed ? 'pipe-planner' : 'plan-swarm';
+  const icon    = isFixed ? '🗺' : '🔀';
+  const titleStr = isFixed
+    ? `Planner (${ev.agent_id||''}) — Task Breakdown`
+    : `Decomposer (${ev.agent_id||''}) — Subtask Split`;
+
+  let stage = document.getElementById('stage-'+stageId);
+  if (!stage) {
+    stage = makeStage(stageId, icon, titleStr, ev.config||'', isFixed?'#4f46e5':'#d97706');
+    canvas().appendChild(conn()); canvas().appendChild(stage);
+  }
+  const subtasks = ev.subtasks || [];
+  const planText = ev.plan_text || '';
+  const roleLabel = isFixed ? 'Planner' : 'Decomposer';
+  const agentId = ev.agent_id || '';
+  const color = isFixed ? '#4f46e5' : '#d97706';
+  document.getElementById('body-'+stageId).innerHTML =
+    `<div style="font-size:11px;color:var(--emerald);font-weight:600;margin-bottom:8px">✓ ${esc(ev.detail||'Plan created')} · 🪙 ${ev.tokens||0} tokens · ⏱ ${ev.latency_s||0}s</div>
+    ${renderAgentSection({role:roleLabel,agentId,response:planText||subtasks.map((s,i)=>`${i+1}. ${s}`).join('\n'),tokens:ev.tokens,latency:ev.latency_s,color})}
+    <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px">Subtasks</div>
+    <div style="display:flex;flex-direction:column;gap:6px">` +
+    subtasks.map((st, i) => `
+      <div class="st-item fadein" id="sti-${i}" style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border:1.5px solid ${AGENT_COLORS[i%AGENT_COLORS.length]}33;border-radius:var(--r);background:var(--surface2)">
+        <div style="width:24px;height:24px;border-radius:50%;background:${AGENT_COLORS[i%AGENT_COLORS.length]};display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0">${i+1}</div>
+        <div style="flex:1">
+          <div style="font-size:12px;line-height:1.4">${esc(st)}</div>
+        </div>
+      </div>`).join('') +
+    `</div>`;
+  patchRichContent(document.getElementById('body-'+stageId));
+  stage.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// subtask_assigned: tags which agent owns which subtask (A3/A4 only)
+function onSubtaskAssigned(ev) {
+  subtaskAssignments[ev.agent_id] = {num: ev.subtask_num, text: ev.subtask_text};
+  const item = document.getElementById('sti-'+(ev.subtask_num-1));
+  if (item) {
+    const color = AGENT_COLORS[(ev.subtask_num-1) % AGENT_COLORS.length];
+    item.style.borderColor = color+'88';
+    let tag = item.querySelector('.agent-assign-tag');
+    if (!tag) {
+      tag = document.createElement('div');
+      tag.className = 'agent-assign-tag';
+      tag.style.cssText = `font-size:10px;font-weight:600;margin-top:4px;color:${color}`;
+      item.querySelector('div[style*="flex:1"]').appendChild(tag);
+    }
+    tag.textContent = '→ ' + ev.agent_id;
+  }
+}
+
+// agent_thinking: handles Planner/Executor/Verifier (A1/A2), workers (A3/A4), and C1
+function onAgentThinking(ev) {
+  const role = ev.role;
+  const subtaskNum = ev.subtask_num;
+  const agentId = ev.agent_id || '';
+  const color = agentId === 'aggregator' ? '#059669' : aColor(agentId);
+  const spinnerHtml = `<span class="spinner" style="border-top-color:${color}"></span>`;
+
+  if (role === 'Planner' || role === 'Executor' || role === 'Verifier') {
+    // A1/A2 pipeline role — create or update role stage
+    const sid = 'pipe-'+role.toLowerCase();
+    const icons = {Planner:'🗺',Executor:'⚡',Verifier:'✅'};
+    const roleColor = {Planner:'#4f46e5',Executor:'#d97706',Verifier:'#059669'}[role];
+    let stage = document.getElementById('stage-'+sid);
+    if (!stage) {
+      stage = makeStage(sid, icons[role], `${role} (${agentId})`, ev.config||runConfig.config, roleColor);
+      canvas().appendChild(conn()); canvas().appendChild(stage);
+    }
+    document.getElementById('body-'+sid).innerHTML =
+      `<div class="agent-status fadein" id="status-${sid}">${spinnerHtml} ${esc(ev.detail||role+' is working…')}</div>`;
+    stage.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  } else if (role === 'Decomposer') {
+    // A3/A4 decomposer — pre-create the plan-swarm stage before task_decomposed fires
+    const sid = 'plan-swarm';
+    let stage = document.getElementById('stage-'+sid);
+    if (!stage) {
+      stage = makeStage(sid, '🔀', `Decomposer (${agentId}) — Splitting Task`, runConfig.config, '#d97706');
+      canvas().appendChild(conn()); canvas().appendChild(stage);
+    }
+    document.getElementById('body-'+sid).innerHTML =
+      `<div class="agent-status fadein">${spinnerHtml} ${esc(ev.detail||'Decomposing task…')}</div>`;
+    stage.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  } else if (agentId === 'aggregator') {
+    // Aggregator stage (A3/A4)
+    let stage = document.getElementById('stage-aggregator');
+    if (!stage) {
+      stage = makeStage('aggregator','🔗','Aggregator — synthesising all results','','#059669');
+      canvas().appendChild(conn()); canvas().appendChild(stage);
+    }
+    document.getElementById('body-aggregator').innerHTML =
+      `<div class="agent-status fadein">${spinnerHtml} ${esc(ev.detail||'Combining all agent results…')}</div>`;
+    stage.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  } else if (subtaskNum !== undefined) {
+    // Worker node (A3/A4) — ensure worker grid exists, create card
+    const wid = 'worker-grid';
+    if (!document.getElementById('stage-'+wid)) {
+      const stage = makeStage(wid,'🤖','Agents — parallel subtask execution','','');
+      const grid = document.createElement('div');
+      grid.className='workers-stack'; grid.id='agents-grid-workers';
+      stage.querySelector('.stage-body').appendChild(grid);
+      canvas().appendChild(conn()); canvas().appendChild(stage);
+    }
+    initAgent(agentId, 'Subtask '+subtaskNum);
+    renderWorkerCard(agentId, subtaskNum, ev.subtask_text||subtaskAssignments[agentId]?.text||'');
+    const card = document.getElementById('wcard-'+agentId);
+    if (card) {
+      card.querySelector('.agent-status').innerHTML =
+        `${spinnerHtml} working on subtask ${subtaskNum}…`;
+      card.classList.add('active');
+      card.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }
+
+  } else if (runConfig.config === 'C1') {
+    ensureC1Stage(agentId);
+    const statusEl=document.getElementById('status-single-agent');
+    if(statusEl)statusEl.innerHTML=`${spinnerHtml} ${esc(ev.detail||'Processing…')}`;
+
+  } else if (ev.round !== undefined && ev.round !== null) {
+    onLegacyAgentThinking(ev);
+
+  } else if (agentId) {
+    onLegacyAgentThinking({...ev, round: 1});
+  }
+}
+
+function renderWorkerCard(agentId, subtaskNum, subtaskText) {
+  const grid = document.getElementById('agents-grid-workers');
+  if (!grid) return;
+  const cardId = 'wcard-'+agentId;
+  if (document.getElementById(cardId)) return;
+  const color = AGENT_COLORS[(subtaskNum-1) % AGENT_COLORS.length];
+  const card = document.createElement('div');
+  card.className='worker-row fadein'; card.id=cardId;
+  card.style.setProperty('--agent-color', color);
+  card.innerHTML=`
+    <div class="worker-row-left" style="border-left:3px solid ${color}">
+      <div class="worker-row-hdr">
+        <div class="agent-avatar" style="background:${color}">${subtaskNum}</div>
+        <div>
+          <div class="agent-name">${agentId}</div>
+          <div class="agent-role">Subtask ${subtaskNum}</div>
+        </div>
+      </div>
+      <div class="worker-assigned"><span style="color:${color};font-weight:600;font-size:10px">ASSIGNED · </span>${esc(subtaskText)}</div>
+      <div class="agent-status" style="font-size:11px">⏳ waiting…</div>
+      <div class="agent-meta" id="wmeta-${agentId}"></div>
+    </div>
+    <div class="worker-row-body" id="wtext-${agentId}"></div>`;
+  grid.appendChild(card);
+}
+
+// agent_response: handles all configs
+function onAgentResponse(ev) {
+  const role = ev.role;
+  const subtaskNum = ev.subtask_num;
+  const agentId = ev.agent_id || '';
+  const tokens = ev.tokens || 0;
+  const latency = ev.latency_s || 0;
+  const response = ev.response || '';
+
+  if (role === 'Planner' || role === 'Decomposer') {
+    return;
+
+  } else if (role === 'Executor') {
+    const body = document.getElementById('body-pipe-executor');
+    if (!body) return;
+    const subtaskResponses = ev.subtask_responses || [];
+    const subtasks = ev.subtasks || [];
+    const statusHtml = `<div class="agent-status" style="color:var(--emerald)">✓ All subtasks completed · 🪙 ${tokens} tok · ⏱ ${latency}s</div>`;
+    let responsesHtml = '';
+    if (subtaskResponses.some(r=>r)) {
+      responsesHtml = '<div class="agent-out-stack" style="margin-top:10px">' +
+        subtaskResponses.map((r, i) => r ?
+          renderAgentSection({
+            role: 'Executor',
+            agentId,
+            subtask: `Subtask ${i+1}${subtasks[i]?' — '+subtasks[i].slice(0,60):''}`,
+            response: r,
+            color: AGENT_COLORS[i%AGENT_COLORS.length],
+          }) : ''
+        ).join('') + '</div>';
+    } else {
+      responsesHtml = renderAgentSection({role:'Executor',agentId,response,tokens,latency,color:'#d97706'});
+    }
+    body.innerHTML = statusHtml + responsesHtml;
+    patchRichContent(body);
+    document.getElementById('m-tokens').textContent=sumTok();
+
+  } else if (role === 'Verifier') {
+    const body = document.getElementById('body-pipe-verifier');
+    if (!body) return;
+    body.innerHTML =
+      `<div class="agent-status" style="color:var(--emerald)">✓ Synthesis complete · 🪙 ${tokens} tok · ⏱ ${latency}s</div>
+       <div style="margin-top:8px">${renderAgentSection({role:'Verifier',agentId,response,tokens,latency,color:'#059669'})}</div>`;
+    patchRichContent(body);
+    document.getElementById('m-tokens').textContent=sumTok();
+
+  } else if (subtaskNum !== undefined) {
+    // Worker response (A3/A4)
+    const textEl = document.getElementById('wtext-'+agentId);
+    const metaEl = document.getElementById('wmeta-'+agentId);
+    const card   = document.getElementById('wcard-'+agentId);
+    const subtaskText = ev.subtask_text || subtaskAssignments[agentId]?.text || '';
+    if (textEl) setRichHtml(textEl, response);
+    if (metaEl) metaEl.innerHTML =
+      `<span class="meta-pill">🪙 ${tokens} tok</span><span class="meta-pill">⏱ ${latency}s</span>`;
+    if (card) card.querySelector('.agent-status').innerHTML =
+      `<span style="color:var(--emerald)">✓</span> subtask ${subtaskNum} done`;
+    card.classList.remove('active');
+    document.getElementById('m-tokens').textContent=sumTok();
+
+  } else if (ev.round !== undefined && ev.round !== null) {
+    onLegacyAgentResponse(ev);
+
+  } else if (runConfig.config === 'C1') {
+    ensureC1Stage(agentId);
+    const statusEl=document.getElementById('status-single-agent');
+    if(statusEl)statusEl.innerHTML=
+      `<span style="color:var(--emerald)">✓</span> complete · 🪙 ${tokens} tok · ⏱ ${latency}s`;
+    const textEl=document.getElementById('c1-response');
+    if(textEl)setRichHtml(textEl,response);
+    document.getElementById('m-tokens').textContent=sumTok();
+  }
+}
+
+function sumTok(){let t=0;document.querySelectorAll('.meta-pill').forEach(p=>{const m=p.textContent.match(/🪙\s*(\d+)/);if(m)t+=parseInt(m[1]);});return t.toLocaleString();}
+
+function onShapley(ev){
+  const {scores, best_agent}=ev;
+  const sid=ev.round?'shapley-r'+ev.round:'shapley';
+  const title=ev.round?`Shapley scores — round ${ev.round}`:'Shapley Contribution Scores';
+  let stage=document.getElementById('stage-'+sid);
+  if(!stage){
+    stage=makeStage(sid,'📊',title,'self-org','');
+    canvas().appendChild(conn());canvas().appendChild(stage);
+  }
+  document.getElementById('body-'+sid).innerHTML=
+    `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Cosine similarity vs pool mean → normalised per-agent contribution. <strong>${best_agent||''}</strong> leads → used for aggregation.</div>`+
+    Object.entries(scores||{}).sort((a,b)=>b[1]-a[1]).map(([aid,s])=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+      <div style="width:26px;height:26px;border-radius:50%;background:${aColor(aid)};display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;flex-shrink:0">${aid.replace('agent_','A')}</div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">
+          <span>${aid}${aid===best_agent?' <strong>★ best</strong>':''}</span>
+          <span style="font-weight:600">${Math.round(s*100)}%</span>
+        </div>
+        <div class="shapley-bar"><div class="shapley-fill" style="width:${Math.round(s*100)}%;background:${aColor(aid)}"></div></div>
+      </div>
+    </div>`).join('');
+  stage.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// aggregation_complete: A3/A4 — shows combined results
+function onAggregationComplete(ev) {
+  const body = document.getElementById('body-aggregator');
+  if (!body) return;
+  const results = ev.agent_results || [];
+  const subtasks = ev.subtasks || [];
+  const agentIds = ev.agent_ids || [];
+  const scores   = ev.shapley_scores || {};
+  const best     = ev.best_agent || '';
+  const tokens   = ev.tokens || 0;
+  const latency  = ev.latency_s || 0;
+
+  body.innerHTML =
+    `<div class="agent-status" style="color:var(--emerald);margin-bottom:10px">✓ Synthesis complete · 🪙 ${tokens} tok · ⏱ ${latency}s · Best agent: <strong>${best}</strong></div>
+     <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Agent contributions</div>
+     <div class="agent-out-stack" style="margin-bottom:12px">` +
+    results.map((r, i) => {
+      const aid = agentIds[i] || ('agent_'+i);
+      const st  = subtasks[i] || '';
+      const score = scores[aid] !== undefined ? Math.round(scores[aid]*100)+'% Shapley' : '';
+      const card = document.getElementById('wcard-'+aid);
+      if (card) {
+        card.classList.remove('active');
+        card.querySelector('.agent-status').innerHTML =
+          `<span style="color:var(--emerald)">✓</span> subtask ${i+1} done`;
+      }
+      return renderAgentSection({
+        role: 'Worker',
+        agentId: aid,
+        subtask: st ? `Subtask ${i+1} — ${st}` : `Subtask ${i+1}`,
+        response: r,
+        color: AGENT_COLORS[i % AGENT_COLORS.length],
+        score,
+      });
+    }).join('') +
+    `</div>
+     ${renderAgentSection({role:'Aggregator',agentId:'aggregator',response:ev.response||'',tokens,latency,color:'#059669'})}`;
+  patchRichContent(body);
+  document.getElementById('m-tokens').textContent=sumTok();
+  const stage = document.getElementById('stage-aggregator');
+  if(stage) stage.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// pipeline_summary: A1/A2 — shows a summary after all 3 roles complete
+function onPipelineSummary(ev) {
+  let stage = document.getElementById('stage-pipe-summary');
+  if (!stage) {
+    stage = makeStage('pipe-summary','📋','Pipeline Summary','fixed-role','');
+    canvas().appendChild(conn()); canvas().appendChild(stage);
+  }
+  const roles = ev.roles || ['Planner','Executor','Verifier'];
+  document.getElementById('body-pipe-summary').innerHTML =
+    `<div style="display:flex;gap:6px;align-items:center;margin-bottom:10px">` +
+    roles.map((r, i) => `<div style="padding:3px 10px;border-radius:4px;background:${['#4f46e5','#d97706','#059669'][i]}22;color:${['#4f46e5','#d97706','#059669'][i]};font-size:11px;font-weight:600">${r}</div>${i<roles.length-1?`<span style="color:var(--muted)">→</span>`:''}`).join('') +
+    `</div><div style="font-size:11px;color:var(--muted)">${esc(ev.detail||'All pipeline roles completed')}</div>`;
+  stage.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function onVerifResult(ev) {
+  addLog('verification', `mode=${ev.mode} verified=${ev.verified}`);
+}
+
+function onFinal(ev){
+  clearAllSpinners();
+  const stage=makeStage('final','✅','Final output','','#059669');
+  stage.querySelector('.stage-body').innerHTML=`<div class="final-card">
+    <div class="final-header">
+      <div class="final-badge ${ev.verified?'pass':'fail'}">${ev.verified?'✓ Verified':'○ Unverified'}</div>
+      <span style="font-size:12px;color:var(--muted)">from <strong>${ev.best_agent||'—'}</strong></span>
+      <span style="font-size:12px;color:var(--muted);margin-left:auto">🪙 ${(ev.total_tokens||0).toLocaleString()} tokens</span>
+    </div>
+    <div class="final-text">${md(ev.response||'')}</div>
+    ${ev.reference?`<div class="final-ref">Reference: ${esc(ev.reference)}</div>`:''}
+  </div>`;
+  canvas().appendChild(conn());canvas().appendChild(stage);
+  patchRichContent(stage);
+  stage.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function onRunSummary(ev){
+  clearAllSpinners();
+  document.querySelectorAll('.agent-card.active').forEach(c=>c.classList.remove('active'));
+  document.getElementById('m-tokens').textContent=(ev.total_tokens||0).toLocaleString();
+  const pct=Math.round((ev.success_score||0)*100);
+  document.getElementById('m-rounds').textContent=ev.rounds;
+  const stage=makeStage('summary','📊','Run summary','','');
+  stage.querySelector('.stage-body').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div class="board-stat"><div class="num" style="color:${ev.passed?'var(--emerald)':'var(--rose)'}">${pct}%</div><div class="lbl">Score</div></div>
+    <div class="board-stat"><div class="num">${(ev.total_tokens||0).toLocaleString()}</div><div class="lbl">Tokens</div></div>
+    <div class="board-stat"><div class="num">${ev.swarm_size}</div><div class="lbl">Agents</div></div>
+    <div class="board-stat"><div class="num">${ev.rounds}</div><div class="lbl">Rounds</div></div>
+  </div>`;
+  canvas().appendChild(conn());canvas().appendChild(stage);
+  stage.scrollIntoView({behavior:'smooth',block:'nearest'});
+  onComplete();
+}
+
+function addLog(type,msg){
+  const log=document.getElementById('event-log');
+  const now=new Date().toLocaleTimeString('en-GB',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const el=document.createElement('div');el.className='log-entry';
+  el.innerHTML=`<span class="log-time">${now}</span>${esc(String(msg).slice(0,60))}`;
+  log.insertBefore(el,log.firstChild);
+  if(log.children.length>50)log.lastChild.remove();
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+const LATEX_CMD_RE=/\\(?:frac|times|div|sqrt|cdot|pm|mp|leq|geq|neq|approx|sum|prod|int|infty|alpha|beta|gamma|pi|theta|text|left|right|begin|end|mathbf|mathrm)/;
+
+marked.setOptions({breaks:true,gfm:true});
+
+function normalizeLatex(text){
+  let s=String(text);
+  // Parenthesised expressions with LaTeX commands: (\frac{1}{2}) → \(\frac{1}{2}\)
+  s=s.replace(/\(([^()]*\\[a-zA-Z][^()]*)\)/g,(match,inner)=>{
+    if(LATEX_CMD_RE.test(inner)||/\\frac|\\times|\\div/.test(inner))return`\\(${inner}\\)`;
+    return match;
+  });
+  // Bare \frac{a}{b} not already delimited
+  s=s.replace(/(\\frac\{[^{}]*\}\{[^{}]*\})/g,(m,expr,offset,str)=>{
+    const before=str.slice(Math.max(0,offset-3),offset);
+    if(/\\\(|\\\[|\$/.test(before))return m;
+    const after=str.slice(offset+m.length,offset+m.length+2);
+    if(after.startsWith('\\)')||after.startsWith(']'))return m;
+    return`\\(${expr}\\)`;
+  });
+  return s;
+}
+
+function md(text){
+  if(!text)return '';
+  try{
+    const normalized=normalizeLatex(String(text));
+    return'<div class="md rich-text">'+marked.parse(normalized)+'</div>';
+  }catch(e){
+    return'<div class="md rich-text"><p>'+esc(text)+'</p></div>';
+  }
+}
+
+const KATEX_OPTS={
+  delimiters:[
+    {left:'$$',right:'$$',display:true},
+    {left:'\\[',right:'\\]',display:true},
+    {left:'\\(',right:'\\)',display:false},
+    {left:'$',right:'$',display:false},
+  ],
+  throwOnError:false,
+  ignoredTags:['script','noscript','style','textarea','pre','code'],
+};
+
+function typesetMath(el){
+  if(!el||typeof renderMathInElement==='undefined')return;
+  try{renderMathInElement(el,KATEX_OPTS);}catch(e){}
+}
+
+function patchRichContent(root){
+  if(!root)return;
+  const sel='.rich-text, .worker-row-body, .agent-out-body, .final-text';
+  if(root.matches&&root.matches(sel))typesetMath(root);
+  root.querySelectorAll(sel).forEach(typesetMath);
+}
+
+function setHtmlAndTypeset(el,html){
+  if(!el)return;
+  el.innerHTML=html;
+  patchRichContent(el);
+}
+
+function setRichHtml(el,text){
+  setHtmlAndTypeset(el,md(text));
+}
+
+function agentSectionColor(idxOrId){
+  if(typeof idxOrId==='number')return AGENT_COLORS[idxOrId%AGENT_COLORS.length];
+  if(typeof idxOrId==='string'&&idxOrId.includes('agent_'))
+    return AGENT_COLORS[parseInt(idxOrId.split('_')[1])%AGENT_COLORS.length];
+  return AGENT_COLORS[0];
+}
+
+function renderAgentSection({role,agentId,subtask,response,tokens,latency,color,score}){
+  if(!response)return '';
+  const c=color||agentSectionColor(agentId||0);
+  const meta=[tokens?`🪙 ${tokens} tok`:null,latency?`⏱ ${latency}s`:null,score||null].filter(Boolean).join(' · ');
+  return `<div class="agent-out-section fadein" style="border-color:${c}55">
+    <div class="agent-out-hdr" style="background:${c}11">
+      <span class="agent-out-badge" style="background:${c}">${esc(role||'Agent')}</span>
+      ${agentId?`<span class="agent-out-id">${esc(agentId)}</span>`:''}
+      ${subtask?`<span class="agent-out-subtask">${esc(subtask)}</span>`:''}
+      ${meta?`<span class="agent-out-meta">${meta}</span>`:''}
+    </div>
+    <div class="agent-out-body">${md(response)}</div>
+  </div>`;
+}
+
+function renderAgentStack(sections,finalBlock){
+  const body=sections.map(s=>renderAgentSection(s)).join('');
+  const fin=finalBlock?`<div class="agent-out-final">${finalBlock}</div>`:'';
+  return `<div class="agent-out-stack">${body}${fin}</div>`;
+}
+
+// ════════════════════════════════════════════════
+// RESULTS TAB
+// ════════════════════════════════════════════════
+
+async function loadResults(){
+  document.getElementById('r-status').textContent='Loading…';
+  try {
+    const data=await fetch('/api/results').then(r=>r.json());
+    allCells=[...(data.result1||[]),...(data.result2||[])];
+    if(allCells.length===0){
+      document.getElementById('results-loading').textContent='No data found. Run Result1 or Result2 first.';
+      document.getElementById('r-status').textContent='No data';
+      return;
+    }
+    document.getElementById('results-loading').remove();
+    const main=document.getElementById('results-main');
+    main.innerHTML=`
+      <div class="summary-row" id="sum-row"></div>
+      <div class="chart-section">
+        <div class="chart-title">Energy Overhead vs C1 Baseline <span class="chart-subtitle">— ▎ = H4 threshold (3×) · lighter bar = R1 · darker = R2</span></div>
+        <div class="chart-body" id="chart-body"></div>
+      </div>
+      <div class="table-section">
+        <div class="table-section-hdr">Per-Cell Records <span class="cell-count" id="cell-count"></span></div>
+        <div class="tbl-wrap">
+          <table class="rtbl" id="rtbl">
+            <thead><tr>
+              <th onclick="srt('run')">Run</th>
+              <th onclick="srt('config')">Config</th>
+              <th onclick="srt('family')">Family</th>
+              <th onclick="srt('seed')">Seed</th>
+              <th onclick="srt('mode')">Mode</th>
+              <th onclick="srt('n_tasks')">#Tasks</th>
+              <th onclick="srt('total_tokens')">Tokens</th>
+              <th>Tok/Task</th>
+              <th onclick="srt('energy_overhead')">Overhead</th>
+              <th onclick="srt('queue_wait_s')">Queue(s)</th>
+              <th onclick="srt('wall_s')">Wall(s)</th>
+              <th onclick="srt('peak_ram_mb')">RAM(MB)</th>
+            </tr></thead>
+            <tbody id="rtbl-body"></tbody>
+          </table>
+        </div>
+      </div>`;
+    const r1n=(data.result1||[]).length, r2n=(data.result2||[]).length;
+    document.getElementById('r-status').textContent=r1n+' R1 · '+r2n+' R2 cells';
+    applyFilters();
+  } catch(e){
+    document.getElementById('results-loading').textContent='Error: '+e.message;
+    document.getElementById('r-status').textContent='Error';
+  }
+}
+
+function applyFilters(){
+  if(allCells.length===0)return;
+  const fR=document.getElementById('f-run').value;
+  const fC=document.getElementById('f-config').value;
+  const fF=document.getElementById('f-family').value;
+  const fM=document.getElementById('f-mode').value;
+  filteredCells=allCells.filter(c=>
+    (fR==='all'||c.run===fR)&&
+    (fC==='all'||c.config===fC)&&
+    (fF==='all'||c.family===fF)&&
+    (fM==='all'||c.mode===fM)
+  );
+  renderSummary();renderChart();renderTable();
+}
+
+function renderSummary(){
+  const row=document.getElementById('sum-row');if(!row)return;
+  const total=filteredCells.length;
+  const tokens=filteredCells.reduce((s,c)=>s+c.total_tokens,0);
+  const wall=filteredCells.reduce((s,c)=>s+c.wall_s,0);
+  const energy=filteredCells.reduce((s,c)=>s+c.energy_kwh,0);
+  row.innerHTML=`
+    <div class="sc"><div class="sc-label">Cells shown</div><div class="sc-value">${total}</div><div class="sc-sub">${filteredCells.filter(c=>c.status!=='ok').length} errors</div></div>
+    <div class="sc"><div class="sc-label">Total tokens</div><div class="sc-value">${(tokens/1e6).toFixed(2)}M</div><div class="sc-sub">${tokens.toLocaleString()}</div></div>
+    <div class="sc"><div class="sc-label">Wall time</div><div class="sc-value">${(wall/60).toFixed(1)}m</div><div class="sc-sub">${Math.round(wall).toLocaleString()}s total</div></div>
+    <div class="sc"><div class="sc-label">Est. energy</div><div class="sc-value">${(energy*1000).toFixed(1)}</div><div class="sc-sub">milliwatt-hours</div></div>`;
+}
+
+function renderChart(){
+  const body=document.getElementById('chart-body');if(!body)return;
+  const cfgs=['C1','A1','A2','A3','A4'];
+  const presentRuns=[...new Set(filteredCells.map(c=>c.run))].sort();
+  const thrPct=(H4_THR/CHART_MAX*100).toFixed(1);
+  body.innerHTML=cfgs.map(cfg=>{
+    const color=CFG_COLORS[cfg]||'#888';
+    const bars=presentRuns.map(run=>{
+      const cells=filteredCells.filter(c=>c.config===cfg&&c.run===run);
+      if(cells.length===0)return '';
+      const val=cells.reduce((s,c)=>s+c.energy_overhead,0)/cells.length;
+      const pct=Math.min(val/CHART_MAX*100,100).toFixed(1);
+      const cls=val<=H4_THR?'thr-ok':val<=5?'thr-warn':'thr-bad';
+      return `<div class="bar-line">
+        <span class="bar-tag" style="color:${run==='R1'?'var(--accent)':'var(--emerald)'}">${run}</span>
+        <div class="bar-track-wrap">
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${pct}%;background:${color};opacity:${run==='R1'?'0.55':'1'}"></div>
+          </div>
+          <div class="threshold-line" style="left:${thrPct}%"></div>
+        </div>
+        <span class="bar-value ${cls}">${val.toFixed(2)}×${val<=H4_THR?' ✓':''}</span>
+      </div>`;
+    }).join('');
+    if(!bars.trim())return '';
+    return `<div class="chart-row">
+      <div class="chart-label"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle"></span>${cfg}</div>
+      <div class="chart-bars">${bars}</div>
+    </div>`;
+  }).join('');
+}
+
+function srt(col){
+  if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true;}
+  renderTable();
+}
+
+function renderTable(){
+  const tbody=document.getElementById('rtbl-body');if(!tbody)return;
+  const cc=document.getElementById('cell-count');if(cc)cc.textContent='— '+filteredCells.length+' cells';
+  const sorted=[...filteredCells].sort((a,b)=>{
+    let va=a[sortCol],vb=b[sortCol];
+    if(va===undefined)va='';if(vb===undefined)vb='';
+    if(typeof va==='number')return sortAsc?va-vb:vb-va;
+    return sortAsc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
+  });
+  tbody.innerHTML=sorted.map((c,i)=>{
+    const color=CFG_COLORS[c.config]||'#888';
+    const oh=c.energy_overhead||0;
+    const ohCls=oh<=H4_THR?'oh-ok':oh<=5?'oh-warn':'oh-bad';
+    const tpt=c.n_tasks>0?Math.round(c.total_tokens/c.n_tasks).toLocaleString():'—';
+    const fam=c.family.replace('formative_assessment_drafting','form.assess').replace('curriculum_question_generation','cur.quest').replace('lesson_adaptation','lesson.adpt').replace('knowledge_base_retrieval','kb.retrieval');
+    const cellJson=JSON.stringify(c).replace(/\\/g,'\\\\').replace(/"/g,'&quot;');
+    return `<tr onclick="selectRow(this,'${cellJson}')" data-i="${i}">
+      <td><span class="run-chip run-${c.run.toLowerCase()}">${c.run}</span></td>
+      <td><span class="cfg-chip" style="background:${color}">${c.config}</span></td>
+      <td title="${c.family}">${fam}</td>
+      <td>${c.seed}</td>
+      <td>${c.mode}</td>
+      <td>${c.n_tasks}</td>
+      <td>${c.total_tokens.toLocaleString()}</td>
+      <td>${tpt}</td>
+      <td class="${ohCls}">${oh.toFixed(2)}×</td>
+      <td>${c.queue_wait_s.toFixed(1)}</td>
+      <td>${c.wall_s.toFixed(1)}</td>
+      <td>${c.peak_ram_mb.toFixed(0)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function selectRow(rowEl, cellJson){
+  document.querySelectorAll('#rtbl-body tr.sel').forEach(r=>r.classList.remove('sel'));
+  rowEl.classList.add('sel');
+  let cell;
+  try{cell=JSON.parse(cellJson.replace(/&quot;/g,'"'));}catch(e){return;}
+  loadTaskPreview(cell);
+}
+
+async function loadTaskPreview(cell){
+  previewCell=cell;
+  previewTasks=[];
+  activeInlineRuns.clear();
+  Object.keys(inlineRunState).forEach(k=>delete inlineRunState[k]);
+  const label=document.getElementById('preview-cell-label');
+  const body=document.getElementById('task-preview-body');
+  label.textContent=`${cell.run} · ${cell.config} · ${cell.family.replace(/_/g,' ')} · seed=${cell.seed} · mode=${cell.mode}`;
+  body.innerHTML='<div class="side-empty"><div style="font-size:30px;opacity:.3">⏳</div><div>Loading task inputs…</div></div>';
+  try{
+    const tasks=await fetch(`/api/corpus_tasks?family=${encodeURIComponent(cell.family)}&seed=${cell.seed}&n=${cell.n_tasks}`).then(r=>r.json());
+    if(tasks.error){body.innerHTML=`<div class="side-empty">${esc(tasks.error)}</div>`;return;}
+    previewTasks=tasks;
+    body.innerHTML=tasks.map((t,i)=>`<div class="preview-item fadein">
+      <div class="preview-hdr">
+        <span class="preview-num">Task ${i+1}/${tasks.length}</span>
+        <span class="preview-id">${esc(t.task_id)}</span>
+      </div>
+      <div class="preview-body">
+        <div class="io-label inp">Input</div>
+        <div class="preview-prompt">${esc(t.prompt)}</div>
+        <div class="preview-ref">
+          <div class="preview-ref-lbl">Reference answer</div>
+          ${esc(t.reference||'(none)')}
+        </div>
+        <div class="out-section">
+          <div class="io-label out">Output</div>
+          <div class="out-box" id="out-${i}">
+            <button class="run-out-btn" id="obtn-${i}" onclick="runInline(${i})">▶ Run with ${esc(cell.config)} to see output</button>
+          </div>
+        </div>
+        <span class="open-live-link" onclick="loadInLiveRun(${i})">↗ Open in Live Run tab</span>
+      </div>
+    </div>`).join('');
+  }catch(e){body.innerHTML=`<div class="side-empty">Failed: ${esc(e.message)}</div>`;}
+}
+
+async function runInline(taskIdx){
+  if(!previewCell||!previewTasks[taskIdx])return;
+  if(activeInlineRuns.has(taskIdx))return;
+  activeInlineRuns.add(taskIdx);
+  const task=previewTasks[taskIdx];
+  const cell=previewCell;
+  const outDiv=document.getElementById('out-'+taskIdx);
+  const btn=document.getElementById('obtn-'+taskIdx);
+  if(!outDiv)return;
+  inlineRunState[taskIdx]={sections:[],final:null,totalTokens:0,verified:false,bestAgent:''};
+  if(btn){btn.disabled=true;btn.textContent='Running…';}
+  outDiv.innerHTML=`<div class="out-spinner"><span class="spinner2"></span>Sending to ${esc(cell.config)} (${esc(cell.mode)} mode)…</div>`;
+  try{
+    const res=await fetch('/api/run',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt:task.prompt,reference:task.reference||'',family:task.family,config:cell.config,mode:cell.mode,swarm_size:3}),
+    });
+    const reader=res.body.getReader(),dec=new TextDecoder();
+    let buf='',t0=performance.now();
+    const state=inlineRunState[taskIdx];
+    async function pump(){
+      const{done,value}=await reader.read();
+      if(done){_finishInline(taskIdx,(performance.now()-t0)/1000);return;}
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');buf=lines.pop();
+      for(const line of lines){
+        if(!line.startsWith('data: '))continue;
+        try{
+          const ev=JSON.parse(line.slice(6));
+          collectInlineEvent(state,ev);
+          const d=document.getElementById('out-'+taskIdx);
+          if(d&&state.sections.length){
+            d.innerHTML=renderInlineSections(state)+
+              `<div class="out-spinner" style="margin-top:8px"><span class="spinner2"></span>${esc(ev.detail||'working…')}</div>`;
+            patchRichContent(d);
+          } else if(d&&ev.type==='agent_thinking'){
+            d.innerHTML=`<div class="out-spinner"><span class="spinner2"></span>${esc(ev.detail||'thinking…')}</div>`;
+          }
+        }catch(e){}
+      }
+      return pump();
+    }
+    await pump();
+  }catch(e){
+    const d=document.getElementById('out-'+taskIdx);
+    if(d)d.innerHTML=`<div class="out-error">Error: ${esc(e.message)}</div>`;
+    const b=document.getElementById('obtn-'+taskIdx);
+    if(b){b.disabled=false;b.textContent='↺ Retry';}
+  }finally{activeInlineRuns.delete(taskIdx);}
+}
+
+function _finishInline(taskIdx,wallS){
+  const outDiv=document.getElementById('out-'+taskIdx);
+  const state=inlineRunState[taskIdx];
+  if(!outDiv)return;
+  if(!state||(!state.final&&!state.sections.length)){
+    outDiv.innerHTML='<div class="out-error">No response received — is Ollama running?</div>';
+    const b=document.getElementById('obtn-'+taskIdx);
+    if(b){b.disabled=false;b.textContent='↺ Retry';}
+    return;
+  }
+  outDiv.innerHTML=`
+    ${renderInlineSections(state)}
+    <div class="out-meta">
+      <span>🪙 ${(state.totalTokens||0).toLocaleString()} tokens</span>
+      <span>⏱ ${wallS.toFixed(1)}s</span>
+    </div>
+    <button class="run-out-btn rerun" onclick="clearInline(${taskIdx})">↺ Re-run</button>`;
+  patchRichContent(outDiv);
+}
+
+function clearInline(taskIdx){
+  const outDiv=document.getElementById('out-'+taskIdx);
+  if(!outDiv||!previewCell)return;
+  delete inlineRunState[taskIdx];
+  outDiv.innerHTML=`<button class="run-out-btn" id="obtn-${taskIdx}" onclick="runInline(${taskIdx})">▶ Run with ${esc(previewCell.config)} to see output</button>`;
+}
+
+function loadInLiveRun(taskIdx){
+  if(!previewCell||!previewTasks[taskIdx])return;
+  const task=previewTasks[taskIdx];
+  const cell=previewCell;
+  switchTab('live');
+  const cs=document.getElementById('config-sel');
+  cs.value=cell.config;cs.dispatchEvent(new Event('change'));
+  const ms=document.getElementById('mode-sel');
+  if(ms.style.display!=='none')ms.value=cell.mode||'none';
+  const fs=document.getElementById('family-sel');
+  fs.value=task.family;fs.dispatchEvent(new Event('change'));
+  document.getElementById('task-input').value=task.prompt;
+  document.getElementById('ref-input').value=task.reference||'';
+  document.getElementById('task-input').focus();
+}
+</script>
+</body>
+</html>
