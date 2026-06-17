@@ -121,17 +121,3 @@ Education task families: `formative_assessment_drafting` · `curriculum_question
 
 ---
 
-## 7. Files in Result2/
-
-| File | Description |
-|------|-------------|
-| `full_run.txt` | Complete console log (live-appended, SSH-safe) |
-| `run_log.jsonl` | Structured per-cell records — flushed after every cell |
-| `progress.txt` | Live progress tracker (overwritten each cell) |
-| `metrics_analysis.txt` | Per-config token / latency / mode breakdown |
-| `frugality_analysis.txt` | Per-config energy / RAM / TTFUO table |
-| `RESULTS.md` | This report |
-
----
-
-*Frugal AI Agent Swarms — COL Phase-1 Pilot (Result2, 2026-06-17)*
